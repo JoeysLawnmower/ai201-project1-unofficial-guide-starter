@@ -10,7 +10,7 @@
 ## Domain
 
 <!-- What domain did you choose? Why is this knowledge valuable and hard to find through official channels? -->
-
+I very originally chose to do CS professor reviews at my college (UIUC). The knowledge isn't necessarily difficult to find through official channels, but it can be rather time consuming to look for specific things about professors/classes or a summary overall.
 ---
 
 ## Documents
@@ -20,16 +20,16 @@
 
 | # | Source | Description | URL or location |
 |---|--------|-------------|-----------------|
-| 1 | | | |
-| 2 | | | |
-| 3 | | | |
-| 4 | | | |
-| 5 | | | |
-| 6 | | | |
-| 7 | | | |
-| 8 | | | |
-| 9 | | | |
-| 10 | | | |
+| 1 |Rate my professor | Margaret Fleck| https://www.ratemyprofessors.com/professor/1169737|
+| 2 | RMP| Geoffrey Challen| https://www.ratemyprofessors.com/professor/2327680|
+| 3 | RMP| Michael Nowak| https://www.ratemyprofessors.com/professor/2685082|
+| 4 | RMP| Ryan Cunningham| https://www.ratemyprofessors.com/professor/1966577|
+| 5 | RMP| Ruta Mehta| https://www.ratemyprofessors.com/professor/2575487|
+| 6 | RMP| Mike Woodley| https://www.ratemyprofessors.com/professor/1698730|
+| 7 | RMP| Hongye Liu| https://www.ratemyprofessors.com/professor/2527253|
+| 8 | RMP| Brad Solomon| https://www.ratemyprofessors.com/professor/2873724|
+| 9 | RMP| Marco Morales Aguirre| https://www.ratemyprofessors.com/professor/2719900|
+| 10 | RMP| Han Zhao| https://www.ratemyprofessors.com/professor/2861440|
 
 ---
 
@@ -41,11 +41,11 @@
      A review-heavy corpus warrants different chunking than a long FAQ. -->
 
 **Chunk size:**
-
+300
 **Overlap:**
-
+75
 **Reasoning:**
-
+Since rate my professor reviews are rather short 300 characters should be enough to encapsulate each review with some extra head room for longer reviews.
 ---
 
 ## Retrieval Approach
@@ -57,11 +57,11 @@
      support, accuracy on domain-specific text, latency? -->
 
 **Embedding model:**
-
+all-MiniLM-L6-v2
 **Top-k:**
-
+3
 **Production tradeoff reflection:**
-
+I'd heavily weigh in the accuracy of the results to ensure the wrong information wasn't being spread. Latency would be second.
 ---
 
 ## Evaluation Plan
@@ -73,11 +73,11 @@
 
 | # | Question | Expected answer |
 |---|----------|-----------------|
-| 1 | | |
-| 2 | | |
-| 3 | | |
-| 4 | | |
-| 5 | | |
+| 1 | What do students say about CS 361?| The professor is nice, but the lectures are bad.|
+| 2 | What do students say about CS 173?| The class has way too many quizzes|
+| 3 | What do students say about CS 222?| The entire class seems to be AI generated|
+| 4 | What do students say about CS 225?| The opinion is mixed, most say the lectures are good|
+| 5 | What do students say about CS 374?| The professor is great and the course is great|
 
 ---
 
@@ -88,9 +88,9 @@
      retrieval, chunks that split key information across boundaries. -->
 
 1.
-
+Hallucination, it could start talking about things not mentioned in the reviews or expand off them.
 2.
-
+The chunking could be too big or too small which would lessen the quality of the responses.
 ---
 
 ## Architecture
@@ -101,6 +101,7 @@
      You can use ASCII art, a Mermaid diagram, or embed a sketch as an image.
      You'll use this diagram as context when prompting AI tools to implement each stage. -->
 
+Rate my professor -> CS professor reviews (300 char, 75 overlap) -> ChromaDB, all-MiniLM-L6-v2 -> Course summary
 ---
 
 ## AI Tool Plan
