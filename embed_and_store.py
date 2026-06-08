@@ -85,7 +85,8 @@ class ReviewEmbedder:
 
     def retrieve_chunks(self, query: str, top_k: int = 3) -> Tuple[List[str], List[float]]:
         """
-        Retrieve top-k most similar chunks for a query.
+        Retrieve top-k most similar chunks for a query using hybrid search.
+        Combines semantic similarity with keyword matching.
 
         Args:
             query: Query text
@@ -96,22 +97,62 @@ class ReviewEmbedder:
         """
         print(f"\nRetrieving top {top_k} chunks for query: '{query}'")
 
+        import re
+
         # Embed the query
         query_embedding = self.model.encode(query).tolist()
 
-        # Query the collection
+        # Get ALL chunks for keyword filtering (hybrid search)
+        # Query semantically but then rerank with keywords
         results = self.collection.query(
             query_embeddings=[query_embedding],
-            n_results=top_k
+            n_results=self.collection.count()  # Get all results for reranking
         )
 
         chunks = results["documents"][0]
         distances = results["distances"][0]
-
-        # Convert distances to similarity scores (cosine distance to similarity)
         similarities = [1 - d for d in distances]
 
-        return chunks, similarities
+        # Extract course codes and keywords from query
+        courses_in_query = re.findall(r'CS\s*\d{3}', query)
+        courses_in_query = [c.replace(' ', '') for c in courses_in_query]  # Normalize
+
+        # Rerank with keyword boosting
+        scored_chunks = []
+        for chunk, score in zip(chunks, similarities):
+            original_score = score
+            boost = 0
+
+            # STRONG boost for exact course match
+            if courses_in_query:
+                courses_in_chunk = re.findall(r'CS\s*\d{3}', chunk)
+                courses_in_chunk = [c.replace(' ', '') for c in courses_in_chunk]
+                if any(c in courses_in_chunk for c in courses_in_query):
+                    boost += 1.0  # Very strong boost
+
+            # Moderate boost for professor names in query
+            query_words = query.split()
+            for word in query_words:
+                if len(word) > 3 and word[0].isupper():
+                    if word.lower() in chunk.lower():
+                        boost += 0.2
+
+            final_score = original_score + boost
+            scored_chunks.append((chunk, final_score, boost, original_score))
+
+        # Sort by final score
+        scored_chunks.sort(key=lambda x: x[1], reverse=True)
+
+        # Print debug info
+        print(f"  Semantic search found these top candidates:")
+        for i, (chunk, final, boost, orig) in enumerate(scored_chunks[:top_k + 3]):
+            boost_str = f" +{boost:.2f}" if boost > 0 else ""
+            print(f"    [{i+1}] {final:.3f}{boost_str} | {chunk[30:70]}...")
+
+        # Return top_k
+        final_chunks, final_scores, _, _ = zip(*scored_chunks[:top_k])
+
+        return list(final_chunks), list(final_scores)
 
     def persist(self) -> None:
         """Embeddings are automatically persisted in the new ChromaDB API."""
